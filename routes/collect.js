@@ -10,10 +10,9 @@ const corsOptions = {
 
 router.options("/charge", cors(corsOptions));
 router.post("/charge", cors(corsOptions), async (req, res) => {
-  var charge;
   try {
     const asyncChargeToken = util.promisify(poynt.chargeToken).bind(poynt);
-    charge = await asyncChargeToken({
+    const charge = await asyncChargeToken({
       businessId: global.configs.businessId,
       action: "SALE",
       amounts: {
@@ -26,12 +25,22 @@ router.post("/charge", cors(corsOptions), async (req, res) => {
       partialAuthEnabled: false,
       receiptEmailAddress: req.body.emailAddress,
     });
+
+    if (charge && charge.status === 'DECLINED') {
+      const processorCode = charge.processorResponse?.statusCode || 'unknown';
+      const processorMessage = charge.processorResponse?.statusMessage || 'unknown';
+      res.status(400).send({
+        message: `Transaction declined. Status code: ${processorCode}. Status message: ${processorMessage}`,
+      });
+    } else {
+      res.status(200).send(charge);
+    }
   } catch (err) {
     console.log("Charge failed", err);
-    return res.status(400).send(err);
+    return res.status(400).send({
+      message: err?.message || 'Unknown error',
+    });
   }
-
-  res.status(200).send(charge);
 });
 
 module.exports = router;
