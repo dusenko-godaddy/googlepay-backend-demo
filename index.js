@@ -9,11 +9,6 @@ app.use(express.static("public"));
 // global configs
 global.configs = require("./lib/configs");
 
-// redirect home to Connect demo
-app.get("/", (_req, res) => {
-  res.redirect("/link");
-});
-
 app.use("/collect", require("./routes/collect"));
 
 const port = 1347;
